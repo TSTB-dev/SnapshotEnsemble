@@ -15,6 +15,7 @@ def get_args():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--num_snapshots", type=int, default=5)
     parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--eval_single", action="store_true", default=False)
     return parser.parse_args()
     
 def evaluate(args):
@@ -31,6 +32,8 @@ def evaluate(args):
         raise ValueError("Invalid dataset")
     log.info("Dataset loaded")
     
+    num_classes = 10 if args.dataset == "cifar10" or args.dataset == "mnist" else 100
+    
     log.info(f"Loading model: {args.model}")
     snapshot_models = []
     for i in range(args.num_snapshots):
@@ -41,14 +44,15 @@ def evaluate(args):
         snapshot_models.append(model)
     log.info("Model loaded")
     
-    log.info("Evaluating Single model")
-    for i, model in enumerate(snapshot_models):
-        accuracy = inference_single(model, test_loader, device=device)
-        log.info(f"Test Accuracy Single for Snapshot[{i}]: {accuracy}")
-    log.info("Single model Evaluation complete")
+    if args.eval_single:
+        log.info("Evaluating Single model")
+        for i, model in enumerate(snapshot_models):
+            accuracy = inference_single(model, test_loader, device=device)
+            log.info(f"Test Accuracy Single for Snapshot[{i}]: {accuracy}")
+        log.info("Single model Evaluation complete")
     
     log.info("Evaluating Ensemble model")
-    accuracy = inference_ensemble(snapshot_models, test_loader, device=device)
+    accuracy = inference_ensemble(snapshot_models, test_loader, device=device, num_classes=num_classes)
     log.info(f"Test Accuracy Ensemble: {accuracy}")
     
 
@@ -65,13 +69,13 @@ def inference_single(model, dataloader, device) -> float:
         accuracy = correct / total
     return accuracy
 
-def inference_ensemble(models, dataloader, device) -> float:
+def inference_ensemble(models, dataloader, device, num_classes) -> float:
     with torch.no_grad():
         correct = 0
         total = 0
         for images, labels in dataloader:
             images, labels = images.to(device), labels.to(device)
-            outputs = torch.zeros(images.size(0), 10).to(device)
+            outputs = torch.zeros(images.size(0), num_classes).to(device)
             for model in models:
                 model.eval()
                 outputs += model(images)

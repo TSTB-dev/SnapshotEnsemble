@@ -26,6 +26,8 @@ def get_args():
     parser.add_argument("--scheduler_type", type=str, default="cyclic_cosine")
     parser.add_argument("--max_lr", type=float, default=0.1)
     parser.add_argument("--min_lr", type=float, default=0.0)
+    parser.add_argument("--weight_decay", type=float, default=5e-4)
+    parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--optimizer", type=str, default="sgd")
     parser.add_argument("--cycle_length", type=int, default=-1)
     parser.add_argument("--cycle_length_decay", type=float, default=1)
@@ -68,7 +70,7 @@ def train(args):
     
     log.info(f"Creating optimizer: {args.optimizer}")
     if args.optimizer == "sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=0.9, weight_decay=1e-4)
+        optimizer = optim.SGD(model.parameters(), lr=args.max_lr, momentum=args.momentum, weight_decay=args.weight_decay)
     elif args.optimizer == "adam":
         optimizer = optim.Adam(model.parameters(), lr=args.max_lr)
     else:
@@ -130,7 +132,6 @@ def train_one_epoch(
             log.info(f"Cycle: {cycle_count} finished. Saving models...")
             # save wandb log dir.
             save_path = os.path.join(f"{wandb.run.dir}", f"snapshot_{cycle_count}.pth")
-            import pdb; pdb.set_trace()
             torch.save(model.state_dict(), save_path)
             log.info(f"Models saved at model_{cycle_count}.pth")
             cycle_count += 1

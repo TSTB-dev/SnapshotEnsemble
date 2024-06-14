@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import torchvision
-
 import timm
+
+from resnet import resnet18
 
 class ConvNet(nn.Module):
     def __init__(self, in_channels, num_classes):
@@ -42,8 +43,9 @@ def get_model(args):
     if args.model == "convnet":
         model = ConvNet(in_channels, num_classes)
     elif args.model == "resnet18":
-        model = torchvision.models.resnet18(pretrained=False)
-        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        # model = torchvision.models.resnet18(pretrained=False)
+        # model.fc = nn.Linear(model.fc.in_features, num_classes)
+        model = resnet18(num_classes=num_classes)
     elif args.model == "resnet34":
         model = torchvision.models.resnet34(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
@@ -53,6 +55,9 @@ def get_model(args):
     elif args.model == "wide_resnet50_2":
         model = torchvision.models.wide_resnet50_2(pretrained=False)
         model.fc = nn.Linear(model.fc.in_features, num_classes)
+    elif args.model == "vgg16":
+        model = torchvision.models.vgg16(pretrained=False)
+        model.classifier[-1] = nn.Linear(model.classifier[-1].in_features, num_classes)
     elif args.model == "efficientnet_b0":
         model = timm.create_model("efficientnet_b0", pretrained=False, num_classes=num_classes)
     elif args.model == "efficientnet_b1":
